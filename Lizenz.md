@@ -50,9 +50,28 @@ Der Firmware-Quellcode bindet Bibliotheken per `#include` ein, die nicht mitgeli
 | `<WiFi.h>`, `<WebServer.h>`, `<ESPmDNS.h>`, `<Preferences.h>`, `<SPI.h>`, `<soc/...>` | Arduino-ESP32 Core (Espressif) | LGPL-2.1 (Core), ESP-IDF-Teile Apache-2.0 |
 | `<MAVLink.h>` | MAVLink C-Bibliothek | MIT |
 | `<SBUS.h>` | SBUS-Bibliothek (Herkunft nicht im Archiv angegeben) | unbekannt, abhaengig von der verwendeten Bibliothek |
-| `<FlixPeriph.h>` | FlixPeriph (IMU-Treiber des Flix-Projekts) | MIT (laut Projekt "Flix" von Oleg Kalachev; nicht verifiziert) |
+| `<FlixPeriph.h>` | FlixPeriph (IMU-Treiber von Oleg Kalachev, Autor von Flix) | nicht geprueft (separates Repository) |
 
-Hinweis zur Herkunft: Der Code verwendet den Preferences-Namensraum `"flix"`, die Bibliothek `FlixPeriph` und eigene Hilfsklassen (`vector.h`, `quaternion.h`, `lpf.h`, `pid.h`) mit zweisprachigen Kommentaeren. Das spricht stark dafuer, dass XW-Drone auf dem Open-Source-Projekt "Flix" (MIT-Lizenz) basiert. Ein entsprechender MIT-Lizenz- und Urhebervermerk des Original-Autors ist im Archiv **nicht** enthalten. Dies sollte geklaert werden, weil die MIT-Lizenz die Beibehaltung des Copyright-Hinweises verlangt. Diese Zuordnung ist eine Vermutung.
+### 2.1 Herkunft des Firmware-Codes: Flix (geprueft)
+
+Der Code wurde mit dem Repository https://github.com/okalachev/flix (Autor: Oleg Kalachev) verglichen; vollstaendige Git-Historie, 667 Commits, Stand 14.11.2026.
+
+**Ergebnis: XW-Drone ist eindeutig eine Ableitung von Flix.**
+
+- Am aehnlichsten ist der Flix-Stand vom 2. Februar 2026 (Commit `67430c7`, "Several minor changes").
+- Gleiche Dateinamen und Modulaufteilung: `control.ino`, `estimate.ino`, `imu.ino`, `motors.ino`, `mavlink.ino`, `parameters.ino`, `rc.ino`, `safety.ino`, `time.ino`, `led.ino`, `wifi.ino`, `log.ino`, `cli.ino`, `pid.h`, `lpf.h`, `quaternion.h`, `vector.h`, `util.h`. Die Hauptdatei `flix.ino` wurde in `XW-Drone.ino` umbenannt.
+- Nahezu identisch, abweichende Zeilen gegenueber Flix `67430c7`: `quaternion.h` 4 von 228, `pid.h` 4 von 50, `vector.h` 5 von 126, `log.ino` 4 von 75, `time.ino` 6 von 27, `estimate.ino` 10 von 38, `util.h` 13 von 92, `mavlink.ino` 18 von 277, `wifi.ino` 22 von 84.
+- Staerker angepasst: `control.ino`, `safety.ino`, `rc.ino`, `led.ino` und `cli.ino`. Neu hinzugekommen sind `battery.ino`, `board_config.h`, `control.h`, `web_rc.ino` und `web_rc_html.h`, die Web-Fernsteuerung.
+- In Flix beginnt jede Quelldatei mit `// Copyright (c) 2023 Oleg Kalachev <okalachev@gmail.com>` und `// Repository: https://github.com/okalachev/flix`. In XW-Drone sind genau diese Zeilen **entfernt** und durch chinesische Kommentare ersetzt. Beispiel `pid.h`: Die einzige inhaltliche Abweichung ist der Ersatz der Copyright-Zeilen durch `// PID控制器实现`.
+- Weitere Spuren: Preferences-Namensraum `"flix"` in `parameters.ino` und `#include <FlixPeriph.h>` in `imu.ino`.
+
+**Korrektur zur Lizenz:** Die fruehere Annahme "Flix steht unter MIT" ist **falsch**. Das Flix-Repository enthaelt keine LICENSE- oder COPYING-Datei und hatte in seiner gesamten Git-Historie nie eine. Die Quelldateien tragen nur den Copyright-Vermerk ohne Lizenzangabe, die README nur einen Haftungsausschluss. Ohne Lizenz gilt das Urheberrecht des Autors uneingeschraenkt ("alle Rechte vorbehalten"). Einzige Ausnahme sind die Nutzungsrechte nach den GitHub-Nutzungsbedingungen: Ansehen und Forken auf GitHub.
+
+**Folgen:**
+- Die GPLv3 + Commons Clause, die "琛光 / ChenGuang" auf XW-Drone gesetzt hat, ist fuer die von Flix uebernommenen Teile sehr wahrscheinlich nicht wirksam. Nur der Urheber Oleg Kalachev kann Lizenzen fuer seinen Code vergeben.
+- Durch das Entfernen der Copyright-Vermerke fehlt die Urhebernennung des Original-Autors.
+- Weitergabe oder Veroeffentlichung von `firmware/source/` und `firmware/binaries/` ist damit rechtlich ungeklaert. Vor einer oeffentlichen Weitergabe sollte die Zustimmung von Oleg Kalachev eingeholt werden (Kontakt laut Quelldateien: okalachev@gmail.com; Telegram-Chat laut Flix-README).
+- Dies ist eine technische Bestandsaufnahme, keine Rechtsberatung. Die Lizenzanzeige der GitHub-Projektseite wurde nicht separat abgefragt; massgeblich sind die Dateien im Repository.
 
 Das Firmware-Abbild `firmware/binaries/XW-Drone.ino.merged.bin` enthaelt zusaetzlich die genannten Bibliotheken sowie ESP-IDF-Code (Apache-2.0) in kompilierter Form.
 
@@ -60,7 +79,7 @@ Das Firmware-Abbild `firmware/binaries/XW-Drone.ino.merged.bin` enthaelt zusaetz
 
 | Komponente / Pfad | Anmerkung |
 |---|---|
-| `firmware/source/XW-Drone/*.ino`, `*.h` (Flugsteuerung, ausser LICENSE-Datei) | Keine Lizenz-/Copyright-Kopfzeilen in den Quelldateien; massgeblich ist nur die LICENSE-Datei (1.1). Die Datei `docs/guides/firmware-build-requirements.txt` nennt `CF-Drone.ino`, die Datei heisst aber `XW-Drone.ino` (Namensinkonsistenz, vermutlich Umbenennung). |
+| `firmware/source/XW-Drone/*.ino`, `*.h` (Flugsteuerung, ausser LICENSE-Datei) | Keine Lizenz-/Copyright-Kopfzeilen in den Quelldateien; die urspruenglichen Flix-Copyright-Zeilen wurden entfernt (siehe 2.1); massgeblich ist nur die LICENSE-Datei (1.1). Die Datei `docs/guides/firmware-build-requirements.txt` nennt `CF-Drone.ino`, die Datei heisst aber `XW-Drone.ino` (Namensinkonsistenz, vermutlich Umbenennung). |
 | `firmware/binaries/XW-Drone.ino.merged.bin` | Kompiliertes Abbild; keine eigene Lizenzangabe (identisch mit der Kopie im lokalen `build/`-Ordner des Archivs, MD5 13bc7ee295e952f61b20626a31e79eff). Faellt vermutlich unter 1.1. |
 | `hardware/schematics/SCH_XW_Z1_V2.0.pdf` | Schaltplan (Hardware XW_Z1 V2.0). Keine Lizenz oder Copyright-Angabe im PDF-Text. Das Projekt wird laut README auf OSHWHub veroeffentlicht; dortige Lizenz nicht geprueft. |
 | `hardware/3d-models/Drone protective cover.stl` | 3D-Modell, binaeres STL ohne Metadaten; keine Lizenzangabe. |
@@ -72,7 +91,7 @@ Das Firmware-Abbild `firmware/binaries/XW-Drone.ino.merged.bin` enthaelt zusaetz
 ## 4. Zusammenfassung
 
 - Ausdruecklich lizenziert: nur der Firmware-Quellcode (GPLv3 + Commons Clause, Licensor 琛光 / ChenGuang) und die Espressif-Dokumente (proprietaer, alle Rechte vorbehalten).
-- Widerspruech/Klaerungsbedarf: GPLv3 + Commons Clause (Verkaufsverbot); moeglicher Ursprung im MIT-lizenzierten Flix-Projekt ohne mitgelieferten Lizenzvermerk.
+- Widerspruech/Klaerungsbedarf: GPLv3 + Commons Clause (Verkaufsverbot); der Code ist nachweislich von Flix (Oleg Kalachev) abgeleitet. Flix hat keine Lizenz, also gilt dort "alle Rechte vorbehalten". Die Copyright-Vermerke wurden entfernt, und die Weitergabe des Firmware-Codes ist ungeklaert (siehe 2.1).
 - Ohne Lizenzangabe: Hardware (Schaltplan, STL), Anleitung, Video, CH340-Treiber.
 - Die Programme von Dritten (Espressif Flash Download Tool, WCH-Treiber) werden nicht weitergegeben; stattdessen verweisen READMEs auf die offiziellen Download-Seiten. Eine Regel in `.gitignore` (`software/**/*.exe`) verhindert ein versehentliches Einchecken.
 - Uebersetzungen: `docs/guides/drone-kit-assembly-and-usage-instructions.en.md` und `firmware/source/XW-Drone/README.en.md` sind inoffizielle englische Uebersetzungen der jeweiligen chinesischen Originale und unterliegen den Rechten der Originalautoren (siehe 1.1 bzw. 3).
