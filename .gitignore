@@ -8,3 +8,6 @@ software/**/*.dll
 
 # Files larger than 100 MB (GitHub limit)
 media/Tutorial Video_.mp4
+
+# Firmware build output
+firmware/build/
