@@ -1,0 +1,7 @@
+Please use the Arduino IDE to open the source code; select and open the `CF-Drone.ino` file.
+
+Note: You must use Arduino IDE version 2.3.x or later to compile; the older version 1.8.19 is not supported!
+
+You must install the ESP32 board core library (i.e., "esp32" by Espressif Systems) and the necessary dependencies (such as MAVLink). Crucially, you must install version 3.3.x of the ESP32 board library! (This is very important; otherwise, compilation errors will occur.)
+
+For the board selection, you can choose either "ESP32 Dev Module" or "WeMOS D1 MINI ESP32".
