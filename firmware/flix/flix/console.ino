@@ -73,6 +73,9 @@ void print(const char* format, ...) {
 	va_end(args);
 	Serial.print(buf);
 	mavlinkPrint(buf);
+#ifdef XW_Z1
+	xwWebLog(buf);
+#endif
 }
 
 void pause(float duration) {

@@ -18,6 +18,9 @@ struct Parameter {
 };
 
 Parameter parameters[] = {
+#ifdef XW_Z1
+	XW_PARAMETERS
+#endif
 	// control
 	{"CTL_RATE_R_P", &rollRatePID.p},
 	{"CTL_RATE_R_I", &rollRatePID.i},

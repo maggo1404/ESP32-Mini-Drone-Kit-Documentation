@@ -48,6 +48,10 @@ extern LowPassFilter<float> voltageFilter;
 extern const int MOT_RL, MOT_RR, MOT_FR, MOT_FL, W_AP, W_STA, W_ESPNOW;
 extern const int FILL, BLINK, RAINBOW, EFFECT_AXEL;
 
+#ifdef XW_Z1
+#include "xw_config.h"
+#endif
+
 void setupConfig() {
 	#if defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C3)
 		pwmFrequency = 38000;
@@ -91,5 +95,9 @@ void setupConfig() {
 		ledPin = 6;
 		ledCount = 68;
 		standbyEffect = EFFECT_AXEL;
+	#endif
+
+	#ifdef XW_Z1
+		xwSetupConfig();
 	#endif
 }

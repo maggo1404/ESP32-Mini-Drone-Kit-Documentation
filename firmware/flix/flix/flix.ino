@@ -28,6 +28,9 @@ void setup() {
 	setupIMU();
 	setupRC();
 	setupLog();
+#ifdef XW_Z1
+	setupXW();
+#endif
 	print("Initializing complete\n");
 	printHelp();
 }
@@ -37,7 +40,13 @@ void loop() {
 	step();
 	readRC();
 	estimate();
+#ifdef XW_Z1
+	xwBeforeControl();
+#endif
 	control();
+#ifdef XW_Z1
+	xwAfterControl();
+#endif
 	sendMotors();
 	loopConsole();
 	loopMavlink();
@@ -45,4 +54,7 @@ void loop() {
 	loopLED();
 	loopLog();
 	syncParameters();
+#ifdef XW_Z1
+	loopXW();
+#endif
 }
