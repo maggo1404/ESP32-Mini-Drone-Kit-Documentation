@@ -23,15 +23,14 @@ Quelle: `board_config.h` der Original-Firmware `XW-Drone` ([GitHub](https://gith
 | Motor vorne rechts (FR) | GPIO 15 | GPIO 8 | GPIO 6 |
 | Motor vorne links (FL) | GPIO 14 | GPIO 3 | GPIO 7 |
 | Akku-Spannung (ADC) | GPIO 36 | GPIO 1 | GPIO 1 |
-| SBUS-Empfänger (RX) | GPIO 16 (Serial2) | GPIO 9 (Serial1) | GPIO 8 (Serial2) |
+| SBUS-Empfänger (RX) | GPIO 16 (Serial1) | GPIO 9 (Serial1) | GPIO 8 (Serial1) |
 | IMU SPI SCK | GPIO 18 | GPIO 6 | GPIO 12 |
 | IMU SPI MISO | GPIO 19 | GPIO 2 | GPIO 13 |
 | IMU SPI MOSI | GPIO 23 | GPIO 7 | GPIO 11 |
 | IMU SPI CS | GPIO 5 | GPIO 10 | GPIO 10 |
 | Status-LED | GPIO 2 | keine (deaktiviert) | GPIO 2 |
 
-!!! note "TODO(verify)"
-    Pinbelegung der portierten Flix-Firmware (`XW_Z1`-Target) gegen `firmware/flix/flix/config.h` bzw. die Board-Definition prüfen; die Tabelle gibt die Belegung der Original-Firmware wieder. Die Pins lassen sich in Flix auch per Parameter ändern (`MOT_PIN_*`, `IMU_PIN_*`, `RC_RX_PIN`, `PWR_VOLT_PIN`).
+Die Tabelle entspricht der portierten Flix-Firmware (`XW_Z1`-Target, `xw_config.h`). Hinweis: FR und FL sind beim ESP32 gegenüber dem Standard-Flix (14/15) vertauscht. Der RC-Empfänger nutzt bei allen Chips Serial1. IMU: MPU-6500/9250, um -PI/2 um die Gierachse gedreht (`IMU_ROT_YAW`). Die PWM-Frequenz ist der Upstream-Standard (38 kHz bei C3/S3), nicht die 78 kHz der Original-XW-Firmware. Die Pins lassen sich auch per Parameter ändern (`MOT_PIN_*`, `IMU_PIN_*`, `RC_RX_PIN`, `PWR_VOLT_PIN`). Nichts davon wurde bisher an echter Hardware getestet.
 
 Hinweise der Original-Firmware: Beim C3 ist GPIO 8 ein Strapping-Pin (interner Pull-up, PWM funktioniert trotzdem), GPIO 9 ist die BOOT-Taste.
 

@@ -27,7 +27,7 @@
 - Check the **attitude display** in QGroundControl while tilting the drone.
 - Console shows garbage: set the baud rate to 115200.
 - Motors stop in flight: inverted-flight or battery protection triggered (status LED blinking fast).
-- Weak thrust or limiting: check the throttle limits `MOT_THR_MIN` / `MOT_THR_MAX` *(TODO(verify): defaults)*.
+- Weak thrust or limiting: check the throttle limits `MOT_THR_MIN` / `MOT_THR_MAX` (defaults 0.10 / 1.0).
 
 ## Wi-Fi / remote control
 

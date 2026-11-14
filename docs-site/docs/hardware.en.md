@@ -14,7 +14,7 @@ Install the board with the **connector facing the same direction as the battery 
 
 ## Pin map
 
-Source: `board_config.h` of the original `XW-Drone` firmware ([GitHub](https://github.com/maggo1404/ESP32-Mini-Drone-Kit-Documentation/blob/main/firmware/source/XW-Drone/board_config.h)). The pins are selected automatically by chip type there.
+Pins of the `XW_Z1` target (`xw_config.h`), derived from `board_config.h` of the original `XW-Drone` firmware ([GitHub](https://github.com/maggo1404/ESP32-Mini-Drone-Kit-Documentation/blob/main/firmware/source/XW-Drone/board_config.h)); they are selected automatically by chip type.
 
 | Function | ESP32 | ESP32-C3 | ESP32-S3 |
 |---|---|---|---|
@@ -23,15 +23,14 @@ Source: `board_config.h` of the original `XW-Drone` firmware ([GitHub](https://g
 | Motor front right (FR) | GPIO 15 | GPIO 8 | GPIO 6 |
 | Motor front left (FL) | GPIO 14 | GPIO 3 | GPIO 7 |
 | Battery voltage (ADC) | GPIO 36 | GPIO 1 | GPIO 1 |
-| SBUS receiver (RX) | GPIO 16 (Serial2) | GPIO 9 (Serial1) | GPIO 8 (Serial2) |
+| SBUS receiver (RX) | GPIO 16 (Serial1) | GPIO 9 (Serial1) | GPIO 8 (Serial1) |
 | IMU SPI SCK | GPIO 18 | GPIO 6 | GPIO 12 |
 | IMU SPI MISO | GPIO 19 | GPIO 2 | GPIO 13 |
 | IMU SPI MOSI | GPIO 23 | GPIO 7 | GPIO 11 |
 | IMU SPI CS | GPIO 5 | GPIO 10 | GPIO 10 |
 | Status LED | GPIO 2 | none (disabled) | GPIO 2 |
 
-!!! note "TODO(verify)"
-    Check the pin map of the ported Flix firmware (`XW_Z1` target) against `firmware/flix/flix/config.h` or the board definition; the table shows the original firmware's mapping. In Flix the pins can also be changed via parameters (`MOT_PIN_*`, `IMU_PIN_*`, `RC_RX_PIN`, `PWR_VOLT_PIN`).
+The table matches the ported Flix firmware (`XW_Z1` target, `xw_config.h`). Note: FR and FL are swapped compared to stock Flix (14/15) on the ESP32. The RC receiver uses Serial1 on all chips. IMU: MPU-6500/9250, rotated by -PI/2 around yaw (`IMU_ROT_YAW`). The PWM frequency is the upstream default (38 kHz on C3/S3), not the 78 kHz of the original XW firmware. The pins can also be changed via parameters (`MOT_PIN_*`, `IMU_PIN_*`, `RC_RX_PIN`, `PWR_VOLT_PIN`). None of this has been tested on real hardware yet.
 
 Notes from the original firmware: on the C3, GPIO 8 is a strapping pin (internal pull-up, PWM works anyway), GPIO 9 is the BOOT button.
 

@@ -18,8 +18,17 @@ The original **XW-Drone** firmware by 琛光 / ChenGuang is derived from [Flix](
 | Status LED | Slow blink = armed, fast = warning (low battery, link lost) |
 | Web remote control | Control from the smartphone browser over the drone's Wi-Fi, see [Remote control](remote-control.md) |
 
-!!! note "TODO(verify)"
-    Fill in exact parameter names, defaults and thresholds of the ported features (source: `firmware/flix/flix/*`, especially `config.h`, `safety.ino`, `power.ino`, `led.ino`, `parameters.ino`).
+Compiled with `-DXW_Z1`; none of this has been tested on real hardware yet. Already in upstream Flix and therefore not duplicated: battery voltage measurement (`power.ino`), RC-loss descend and the tilt failsafe at 120° in STAB mode (`SF_DISARM_TILT`). Added by the XW port (`firmware/flix/flix/xw_*`):
+
+- **Battery**: `PWR_VOLT_WARN` 3.5 V (arming lockout, and an idle armed drone is disarmed after 0.9 s) and `PWR_VOLT_CRIT` 3.0 V (automatic descent in flight, latched until disarm). Changed upstream defaults on XW_Z1: `PWR_VOLT_SCALE` 1.303 (43/33 divider), `PWR_VOLT_LPF_A` 0.2, `PWR_VOLT_LOW` 3.3 V, plus the pin parameters (`PWR_VOLT_PIN`, `RC_RX_PIN`, `IMU_MODEL`, `IMU_PIN_*`, `MOT_PIN_*`, `IMU_ROT_YAW`). Readings below 0.5 V mean USB power and are ignored.
+- **Inverted protection**: in any mode; tilt above 134° for 1.5 s stops the motors.
+- **Throttle limits**: `MOT_THR_MIN` 0.10 (thrust at the bottom of the throttle range / idle; the effective minimum is clamped to 0.1) and `MOT_THR_MAX` 1.0.
+- **Status LED**: off when disarmed (fast blink if the battery is low), 1 Hz slow blink when armed, 8 Hz fast blink on any warning (low battery, inverted, RC lost, web link lost); on during startup.
+- **Wi-Fi**: on XW_Z1 the access point is `XW_Drone_WiFi` / `12345678` (only set if `WIFI_AP_SSID` / `WIFI_AP_PASS` are not stored yet; `ap <ssid> <password>` changes them, `preset` resets). The stock `flix-esp32` build keeps `flix` / `flixwifi`.
+- **Web RC**: see [Remote control](remote-control.md).
+
+!!! warning "Flash usage"
+    The ESP32-C3 build uses 98% of the app partition, so there is little headroom for additions.
 
 ## Targets
 
@@ -56,8 +65,7 @@ Output in `firmware/build/<target>/`: `flix.ino.merged.bin` (address 0x0), `flix
 
 `firmware/flix/` is a git subtree of [okalachev/flix](https://github.com/okalachev/flix). A workflow checks upstream regularly and prepares updates as a pull request; the XW_Z1 changes are tested against the new state (all targets are built in CI). Details: `firmware/README.md`.
 
-!!! note "TODO(verify)"
-    Align the exact upstream-sync process (workflow `upstream-sync.yml`, PR flow) with `firmware/README.md`.
+The workflow `.github/workflows/upstream-sync.yml` runs weekly (Monday 04:17 UTC, or manually). It executes `git subtree pull --prefix=firmware/flix https://github.com/okalachev/flix master --squash`, builds all targets and opens a pull request on success, or an issue (label `upstream-sync`) on a merge conflict or build failure. Upstream files carry only small `#ifdef XW_Z1` hooks (`config.h`, `flix.ino`, `parameters.ino`, `console.ino`); the XW code lives in `firmware/flix/flix/xw_*`.
 
 ## Parameters
 
@@ -72,8 +80,8 @@ Flix is configured via parameters (QGroundControl: *Vehicle Setup → Parameters
 | `RC_RX_PIN` | SBUS input (negative = off) |
 | `CTL_ATT_MAX` | Maximum tilt angle (reduce for smartphone control) |
 | `WIFI_MODE` | Wi-Fi mode (AP/client) |
-| `MOT_THR_MIN`, `MOT_THR_MAX` | Throttle limits *(TODO(verify): name, range, default)* |
-| Battery thresholds (warning/auto-land) | *TODO(verify): parameter names and defaults* |
-| Web RC (SSID, password) | *TODO(verify): parameter names* |
+| `MOT_THR_MIN`, `MOT_THR_MAX` | Throttle limits: thrust at the bottom of the throttle range / idle (default 0.10, effective minimum at least 0.1) and at the top (default 1.0) |
+| `PWR_VOLT_WARN`, `PWR_VOLT_CRIT`, `PWR_VOLT_LOW` | Battery thresholds: warning with arming lockout (3.5 V), automatic descent (3.0 V), in-flight warning (3.3 V) |
+| `WIFI_AP_SSID`, `WIFI_AP_PASS` | Access point credentials (also via console: `ap <ssid> <password>`) |
 
 Full list and details: [Flix documentation](https://github.com/okalachev/flix/blob/master/docs/usage.md) or `firmware/flix/docs/` in the repository.

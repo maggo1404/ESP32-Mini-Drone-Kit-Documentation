@@ -27,7 +27,7 @@
 - **Lagedarstellung** in QGroundControl beim Kippen der Drohne prüfen.
 - Konsole zeigt Müll: Baudrate 115200 einstellen.
 - Motoren stoppen im Flug: Umkehrflug-Schutz oder Akku-Schutz (Status-LED schnell blinkend) ausgelöst.
-- Wenig Schub oder Abregeln: Schubgrenzen `MOT_THR_MIN` / `MOT_THR_MAX` prüfen *(TODO(verify): Defaults)*.
+- Wenig Schub oder Abregeln: Schubgrenzen `MOT_THR_MIN` / `MOT_THR_MAX` prüfen (Standard 0,10 / 1,0).
 
 ## WLAN / Fernsteuerung
 

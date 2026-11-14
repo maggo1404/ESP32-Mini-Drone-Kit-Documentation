@@ -18,8 +18,17 @@ Die Original-Firmware **XW-Drone** von 琛光 / ChenGuang ist eine Ableitung von
 | Status-LED | Langsam blinkend = armed, schnell = Warnung (Akku leer, Verbindung verloren) |
 | Web-Fernsteuerung | Steuerung im Smartphone-Browser über das WLAN der Drohne, siehe [Fernsteuerung](remote-control.md) |
 
-!!! note "TODO(verify)"
-    Genaue Parameternamen, Standardwerte und Schwellen der portierten Funktionen eintragen (Quelle: `firmware/flix/flix/*`, insbesondere `config.h`, `safety.ino`, `power.ino`, `led.ino`, `parameters.ino`).
+Kompiliert mit `-DXW_Z1`; nichts davon wurde bisher an echter Hardware getestet. Bereits im Original-Flix vorhanden und daher nicht dupliziert: Akkuspannungsmessung (`power.ino`), Absinken bei RC-Verlust und das Neigungs-Failsafe bei 120° im STAB-Modus (`SF_DISARM_TILT`). Vom XW-Port ergänzt (`firmware/flix/flix/xw_*`):
+
+- **Akku**: `PWR_VOLT_WARN` 3,5 V (Arm-Sperre; eine scharfe Drohne im Leerlauf wird nach 0,9 s entschärft) und `PWR_VOLT_CRIT` 3,0 V (automatisches Absinken im Flug, bis zum Disarm gespeichert). Geänderte Upstream-Standardwerte beim XW_Z1: `PWR_VOLT_SCALE` 1,303 (Teiler 43/33), `PWR_VOLT_LPF_A` 0,2, `PWR_VOLT_LOW` 3,3 V sowie die Pin-Parameter (`PWR_VOLT_PIN`, `RC_RX_PIN`, `IMU_MODEL`, `IMU_PIN_*`, `MOT_PIN_*`, `IMU_ROT_YAW`). Messwerte unter 0,5 V bedeuten USB-Versorgung und werden ignoriert.
+- **Umkehrflug-Schutz**: in jedem Modus; Neigung über 134° für 1,5 s stoppt die Motoren.
+- **Schubgrenzen**: `MOT_THR_MIN` 0,10 (Schub am unteren Ende des Gasbereichs / Leerlauf; das effektive Minimum ist auf mindestens 0,1 begrenzt) und `MOT_THR_MAX` 1,0.
+- **Status-LED**: bei Disarm aus (schnelles Blinken bei niedrigem Akku), im Armed-Zustand langsames Blinken mit 1 Hz, bei jeder Warnung schnelles Blinken mit 8 Hz (Akku niedrig, Umkehrlage, RC verloren, Web-Verbindung verloren); beim Start an.
+- **WLAN**: Beim XW_Z1 ist der Access Point `XW_Drone_WiFi` / `12345678` (nur gesetzt, wenn `WIFI_AP_SSID` / `WIFI_AP_PASS` noch nicht gespeichert sind; `ap <ssid> <passwort>` ändert sie, `preset` setzt zurück). Der Standard-Build `flix-esp32` behält `flix` / `flixwifi`.
+- **Web-RC**: siehe [Fernsteuerung](remote-control.md).
+
+!!! warning "Flash-Belegung"
+    Der ESP32-C3-Build belegt 98 % der App-Partition, es bleibt kaum Spielraum für Erweiterungen.
 
 ## Targets
 
@@ -56,8 +65,7 @@ Ergebnis in `firmware/build/<target>/`: `flix.ino.merged.bin` (Adresse 0x0), `fl
 
 `firmware/flix/` ist ein Git-Subtree von [okalachev/flix](https://github.com/okalachev/flix). Ein Workflow prüft den Upstream regelmäßig und bereitet Aktualisierungen als Pull Request vor; die XW_Z1-Anpassungen werden dabei gegen den neuen Stand getestet (Build aller Targets in der CI). Details: `firmware/README.md`.
 
-!!! note "TODO(verify)"
-    Genauen Ablauf des Upstream-Syncs (Workflow `upstream-sync.yml`, PR-Prozess) mit `firmware/README.md` abgleichen.
+Der Workflow `.github/workflows/upstream-sync.yml` läuft wöchentlich (montags 04:17 UTC, oder manuell). Er führt `git subtree pull --prefix=firmware/flix https://github.com/okalachev/flix master --squash` aus, baut alle Targets und öffnet bei Erfolg einen Pull Request, bei Merge-Konflikt oder Build-Fehler ein Issue (Label `upstream-sync`). Upstream-Dateien enthalten nur kleine `#ifdef XW_Z1`-Hooks (`config.h`, `flix.ino`, `parameters.ino`, `console.ino`); der XW-Code liegt in `firmware/flix/flix/xw_*`.
 
 ## Parameter
 
@@ -72,8 +80,8 @@ Flix wird über Parameter konfiguriert (QGroundControl: *Vehicle Setup → Param
 | `RC_RX_PIN` | SBUS-Eingang (negativ = aus) |
 | `CTL_ATT_MAX` | Maximaler Neigungswinkel (für Smartphone-Steuerung verringern) |
 | `WIFI_MODE` | WLAN-Modus (AP/Client) |
-| `MOT_THR_MIN`, `MOT_THR_MAX` | Schubgrenzen *(TODO(verify): Name, Bereich, Standard)* |
-| Akku-Schwellen (Warnung/Auto-Landung) | *TODO(verify): Parameternamen und Standardwerte* |
-| Web-RC (SSID, Passwort) | *TODO(verify): Parameternamen* |
+| `MOT_THR_MIN`, `MOT_THR_MAX` | Schubgrenzen: Schub am unteren Ende des Gasbereichs / Leerlauf (Standard 0,10, effektives Minimum mindestens 0,1) und am oberen Ende (Standard 1,0) |
+| `PWR_VOLT_WARN`, `PWR_VOLT_CRIT`, `PWR_VOLT_LOW` | Akku-Schwellen: Warnung mit Arm-Sperre (3,5 V), automatisches Absinken (3,0 V), Warnung im Flug (3,3 V) |
+| `WIFI_AP_SSID`, `WIFI_AP_PASS` | Zugangsdaten des Access Points (auch per Konsole: `ap <ssid> <passwort>`) |
 
 Vollständige Liste und Details: [Flix-Dokumentation](https://github.com/okalachev/flix/blob/master/docs/usage.md) bzw. `firmware/flix/docs/` im Repository.

@@ -21,8 +21,8 @@ Based on the [kit's instructions (Chinese PDF)](https://github.com/maggo1404/ESP
 
 1. Power on the drone. On your phone, find the Wi-Fi `XW_Drone_WiFi` and connect (password `12345678`), then open `192.168.4.1:8080` in the browser (type the colon in English keyboard mode).
 2. Calibrate before the first flight: tap "Debug" in the interface, enter `ca` and follow the prompts (accelerometer calibration).
-3. Test flight: first tap "Unlock" (arm); the propellers start. Left stick up raises throttle, left/right yaws. The right stick controls pitch/roll.
-4. Landing: reduce throttle **slowly**, otherwise the drone drops. Tap "Lock" (disarm) to stop the motors. Do not fly too high on test flights.
+3. Test flight: first tap "Arm"; the propellers start. Left stick up raises throttle, left/right yaws. The right stick controls pitch/roll.
+4. Landing: reduce throttle **slowly**, otherwise the drone drops. Tap "Disarm" to stop the motors. Do not fly too high on test flights.
 
-!!! note "TODO(verify)"
-    SSID, password and URL apply to the original `XW-Drone` firmware. Confirm them for the ported Flix firmware (`XW_Z1`), see [Remote control](remote-control.md).
+!!! note
+    These values are the defaults of the ported Flix firmware (`XW_Z1` target), see [Remote control](remote-control.md). The port has not been tested on real hardware yet.

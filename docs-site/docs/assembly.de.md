@@ -21,8 +21,8 @@ Grundlage ist die [Kit-Anleitung (chinesisches PDF)](https://github.com/maggo140
 
 1. Drohne einschalten. Am Smartphone das WLAN `XW_Drone_WiFi` suchen und verbinden (Passwort `12345678`), dann im Browser `192.168.4.1:8080` öffnen (Doppelpunkt im englischen Tastaturmodus).
 2. Vor dem ersten Flug kalibrieren: in der Oberfläche auf „Debug“ tippen, `ca` eingeben und den Anweisungen folgen (Beschleunigungssensor-Kalibrierung).
-3. Testflug: erst „Unlock“ (Entsperren/Arm) tippen, die Propeller drehen an. Linker Stick nach oben erhöht den Schub, links/rechts dreht (Gieren). Der rechte Stick steuert Nick/Roll.
-4. Landen: Schub **langsam** reduzieren, sonst fällt die Drohne. Mit „Lock“ (Sperren/Disarm) die Motoren stoppen. Für Testflüge nicht zu hoch fliegen.
+3. Testflug: erst „Arm“ tippen, die Propeller drehen an. Linker Stick nach oben erhöht den Schub, links/rechts dreht (Gieren). Der rechte Stick steuert Nick/Roll.
+4. Landen: Schub **langsam** reduzieren, sonst fällt die Drohne. Mit „Disarm“ die Motoren stoppen. Für Testflüge nicht zu hoch fliegen.
 
-!!! note "TODO(verify)"
-    SSID, Passwort und URL gelten für die Original-Firmware `XW-Drone`. Für die portierte Flix-Firmware (`XW_Z1`) bestätigen, siehe [Fernsteuerung](remote-control.md).
+!!! note
+    Diese Werte sind die Standardwerte der portierten Flix-Firmware (`XW_Z1`-Target), siehe [Fernsteuerung](remote-control.md). Der Port wurde noch nicht an echter Hardware getestet.
