@@ -11,3 +11,6 @@ media/Tutorial Video_.mp4
 
 # Firmware build output
 firmware/build/
+
+# MkDocs output
+site/
