@@ -1,15 +1,14 @@
 name: Firmware
 
-# Builds all firmware targets, verifies the merged flash images and (on v* tags)
-# publishes a GitHub Release. Also callable from other workflows (e.g. Pages)
+# Builds all firmware targets and verifies the merged flash images. Also callable from other workflows (e.g. Pages)
 # to obtain the binaries as artifacts named `firmware-<target>`.
+# Releases (v* tags) are handled by release.yml.
 #
 # Branch protection: require the single status check `ci-ok`.
 
 on:
   push:
     branches: [ main ]
-    tags: [ 'v*' ]
   pull_request:          # all branches; runs on the PR merge commit
   workflow_dispatch:
   workflow_call:
@@ -81,30 +80,3 @@ jobs:
           [ "$r" = "success" ] || { echo "::error::A required job did not succeed ($r)"; exit 1; }
         done
 
-  release:
-    name: release
-    # Only for real tag pushes, not when called from another workflow.
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-    needs: ci-ok
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-    - uses: actions/download-artifact@v7
-      with:
-        pattern: firmware-*
-        path: artifacts
-    - name: Create release
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        TAG: ${{ github.ref_name }}
-        REPO: ${{ github.repository }}
-      run: |
-        mkdir release
-        for d in artifacts/firmware-*; do
-          target="${d#artifacts/firmware-}"
-          cp "$d/flix.ino.merged.bin" "release/flix-${target}-${TAG}.merged.bin"
-        done
-        ls -l release
-        gh release create "$TAG" release/* --repo "$REPO" --title "$TAG" --generate-notes \
-          --notes "Merged images: flash at address 0x0 (e.g. with esptool or a web flasher)."

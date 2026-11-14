@@ -55,9 +55,11 @@ so the build runs inside the sync job.)
 
 ## CI
 
-- `.github/workflows/firmware.yml`: jobs `unit-tests`, `build (<target>)` (matrix), `ci-ok`, and
-  `release` on `v*` tags (attaches `flix-<target>-<tag>.merged.bin`). Artifacts: `firmware-<target>`.
-  It runs on pushes to `main`, on every pull request (merge commit), manually, and via `workflow_call`.
+- `.github/workflows/firmware.yml`: jobs `unit-tests`, `build (<target>)` (matrix) and `ci-ok`.
+  Artifacts: `firmware-<target>`. It runs on pushes to `main`, on every pull request (merge commit),
+  manually, and via `workflow_call` (read-only permissions, used by `pages.yml` and `release.yml`).
+- `.github/workflows/release.yml`: on `v*` tags, builds via `firmware.yml` and creates a GitHub
+  Release with `flix-<target>-<tag>.merged.bin` attached.
 - `.github/workflows/upstream-sync.yml`: see above.
 
 Recommendation: enable branch protection on `main` and require the single status check **`ci-ok`**.
