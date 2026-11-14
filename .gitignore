@@ -1,0 +1,10 @@
+# Local-only: original downloaded archive and its extracted contents (kept on disk, never committed)
+_original/
+
+# Proprietary third-party binaries are not redistributed (see Lizenz.md)
+software/**/*.exe
+software/**/*.EXE
+software/**/*.dll
+
+# Files larger than 100 MB (GitHub limit)
+media/Tutorial Video_.mp4
