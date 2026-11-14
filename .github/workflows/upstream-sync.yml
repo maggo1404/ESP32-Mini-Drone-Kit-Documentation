@@ -1,0 +1,221 @@
+name: Upstream sync
+
+# Weekly test whether upstream okalachev/flix (master) still merges into
+# firmware/flix and builds. On success a PR is opened, on problems an issue.
+# Requires: Settings > Actions > General > Workflow permissions:
+#   "Allow GitHub Actions to create and approve pull requests".
+
+on:
+  schedule:
+    - cron: '17 4 * * 1'   # Mondays 04:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: false
+
+env:
+  UPSTREAM_URL: https://github.com/okalachev/flix
+  UPSTREAM_BRANCH: master
+  PREFIX: firmware/flix
+  CORE_VERSION: "3.3.10"
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+    - name: Configure git
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+    - name: Compare upstream with last import
+      id: detect
+      run: |
+        upstream=$(git ls-remote "$UPSTREAM_URL" "refs/heads/$UPSTREAM_BRANCH" | cut -f1)
+        [ -n "$upstream" ] || { echo "::error::Could not resolve upstream HEAD"; exit 1; }
+        last=$(git log --format=%B --grep="^git-subtree-dir: $PREFIX\$" | sed -n 's/^git-subtree-split: *//p' | head -n1)
+        echo "upstream=$upstream" >> "$GITHUB_OUTPUT"
+        echo "last=$last" >> "$GITHUB_OUTPUT"
+        echo "short=${upstream:0:7}" >> "$GITHUB_OUTPUT"
+        if [ "$upstream" = "$last" ]; then
+          echo "uptodate=true" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Upstream sync: up to date"
+            echo "Upstream \`$UPSTREAM_BRANCH\` is at \`${upstream:0:12}\`, which is the last imported commit."
+          } >> "$GITHUB_STEP_SUMMARY"
+        else
+          echo "uptodate=false" >> "$GITHUB_OUTPUT"
+          echo "Last imported: ${last:-unknown}; upstream: $upstream"
+        fi
+
+    - name: Prepare label
+      if: steps.detect.outputs.uptodate == 'false'
+      run: gh label create upstream-sync --color 0e8a16 --description "Upstream Flix sync problems" || true
+
+    - name: Merge upstream into subtree
+      id: merge
+      if: steps.detect.outputs.uptodate == 'false'
+      env:
+        SHORT: ${{ steps.detect.outputs.short }}
+        UPSTREAM: ${{ steps.detect.outputs.upstream }}
+        LAST: ${{ steps.detect.outputs.last }}
+      run: |
+        branch="upstream-sync/flix-$SHORT"
+        echo "branch=$branch" >> "$GITHUB_OUTPUT"
+        git checkout -b "$branch"
+        set +e
+        git subtree pull --prefix="$PREFIX" "$UPSTREAM_URL" "$UPSTREAM_BRANCH" --squash \
+          -m "Merge upstream okalachev/flix $SHORT into $PREFIX"
+        rc=$?
+        set -e
+        if [ $rc -eq 0 ]; then
+          echo "result=ok" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        conflicts=$(git diff --name-only --diff-filter=U || true)
+        git merge --abort 2>/dev/null || true
+        echo "result=conflict" >> "$GITHUB_OUTPUT"
+        {
+          echo "Merging upstream \`okalachev/flix\` \`$UPSTREAM_BRANCH\` (\`${UPSTREAM:0:12}\`, previous import \`${LAST:0:12}\`) into \`$PREFIX\` **failed**."
+          echo
+          if [ -n "$conflicts" ]; then
+            echo "Conflicting files:"
+            echo '```'
+            echo "$conflicts"
+            echo '```'
+          else
+            echo "git exited with code $rc without listing conflicting files; see the workflow log."
+          fi
+          echo
+          echo "To resolve locally:"
+          echo '```'
+          echo "git checkout main && git pull"
+          echo "git checkout -b $branch"
+          echo "git subtree pull --prefix=$PREFIX $UPSTREAM_URL $UPSTREAM_BRANCH --squash"
+          echo "# resolve conflicts (our XW_Z1 changes live in $PREFIX), git add, git commit"
+          echo "firmware/build.sh all"
+          echo "git push -u origin $branch   # then open a PR"
+          echo '```'
+          echo
+          echo "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+        } > "$RUNNER_TEMP/issue.md"
+        {
+          echo "## Upstream sync: merge conflict"
+          cat "$RUNNER_TEMP/issue.md"
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Report merge conflict
+      if: steps.merge.outputs.result == 'conflict'
+      run: |
+        title="Upstream sync: merge conflict with okalachev/flix ${{ steps.detect.outputs.short }}"
+        num=$(gh issue list --label upstream-sync --state open --json number --jq '.[0].number // empty')
+        if [ -n "$num" ]; then
+          gh issue comment "$num" --body-file "$RUNNER_TEMP/issue.md"
+        else
+          gh issue create --title "$title" --label upstream-sync --body-file "$RUNNER_TEMP/issue.md"
+        fi
+
+    - name: Install Arduino CLI
+      if: steps.merge.outputs.result == 'ok'
+      run: curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=/usr/local/bin sh
+    - name: Cache Arduino core and libraries
+      if: steps.merge.outputs.result == 'ok'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.arduino15
+          ~/Arduino/libraries
+        key: arduino-esp32-${{ env.CORE_VERSION }}-sync-${{ hashFiles('firmware/build.sh') }}
+        restore-keys: |
+          arduino-esp32-${{ env.CORE_VERSION }}-
+
+    - name: Build all targets and check images
+      id: build
+      if: steps.merge.outputs.result == 'ok'
+      run: |
+        set +e
+        ok=true
+        {
+          firmware/build.sh all || ok=false
+          if $ok; then
+            for t in xw-z1 xw-z1-c3 xw-z1-s3 flix-esp32; do
+              python3 -I firmware/scripts/check_merged_bin.py "firmware/build/$t/flix.ino.merged.bin" --target "$t" || ok=false
+            done
+          fi
+        } 2>&1 | tee "$RUNNER_TEMP/build.log"
+        if $ok && ! grep -q 'RESULT: FAIL' "$RUNNER_TEMP/build.log"; then
+          echo "result=ok" >> "$GITHUB_OUTPUT"
+        else
+          echo "result=failed" >> "$GITHUB_OUTPUT"
+          {
+            echo "Building after merging upstream \`${{ steps.detect.outputs.upstream }}\` into \`$PREFIX\` **failed**."
+            echo
+            echo "Last log lines:"
+            echo '```'
+            tail -n 40 "$RUNNER_TEMP/build.log"
+            echo '```'
+            echo
+            echo "Reproduce locally: \`git subtree pull --prefix=$PREFIX $UPSTREAM_URL $UPSTREAM_BRANCH --squash && firmware/build.sh all\`"
+            echo
+            echo "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          } > "$RUNNER_TEMP/issue.md"
+          { echo "## Upstream sync: build failed"; cat "$RUNNER_TEMP/issue.md"; } >> "$GITHUB_STEP_SUMMARY"
+        fi
+
+    - name: Report build failure
+      if: steps.build.outputs.result == 'failed'
+      run: |
+        title="Upstream sync: build fails with okalachev/flix ${{ steps.detect.outputs.short }}"
+        num=$(gh issue list --label upstream-sync --state open --json number --jq '.[0].number // empty')
+        if [ -n "$num" ]; then
+          gh issue comment "$num" --body-file "$RUNNER_TEMP/issue.md"
+        else
+          gh issue create --title "$title" --label upstream-sync --body-file "$RUNNER_TEMP/issue.md"
+        fi
+
+    - name: Push branch and open PR
+      id: pr
+      if: steps.build.outputs.result == 'ok'
+      env:
+        BRANCH: ${{ steps.merge.outputs.branch }}
+        UPSTREAM: ${{ steps.detect.outputs.upstream }}
+        LAST: ${{ steps.detect.outputs.last }}
+        SHORT: ${{ steps.detect.outputs.short }}
+      run: |
+        cat > "$RUNNER_TEMP/pr.md" <<BODY
+        Automated upstream sync: merges \`okalachev/flix\` \`$UPSTREAM_BRANCH\` (\`$SHORT\`) into \`$PREFIX\` via \`git subtree pull --squash\`.
+
+        - Previous import: \`${LAST:0:12}\`
+        - New upstream commit: [\`${UPSTREAM:0:12}\`]($UPSTREAM_URL/commit/$UPSTREAM)
+        - Compare: $UPSTREAM_URL/compare/${LAST}...${UPSTREAM}
+
+        **Build result: all targets (xw-z1, xw-z1-c3, xw-z1-s3, flix-esp32) built and passed the merged-bin checks** in [this run]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID).
+
+        Note: PRs created with \`GITHUB_TOKEN\` do not trigger other workflows, so the Firmware workflow does not run on this PR automatically; the build was performed inside the sync job instead. To run the regular checks, push an empty commit to the branch (with a personal token/in a local clone) or close and reopen the PR.
+        BODY
+        git push --force origin "$BRANCH"
+        num=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+        if [ -n "$num" ]; then
+          gh pr edit "$num" --body-file "$RUNNER_TEMP/pr.md"
+          url=$(gh pr view "$num" --json url --jq .url)
+        else
+          url=$(gh pr create --base main --head "$BRANCH" \
+            --title "Upstream sync: okalachev/flix $SHORT" --body-file "$RUNNER_TEMP/pr.md")
+        fi
+        { echo "## Upstream sync: PR opened"; echo "$url"; } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Fail on problems
+      if: steps.merge.outputs.result == 'conflict' || steps.build.outputs.result == 'failed'
+      run: |
+        echo "::error::Upstream sync failed (merge: ${{ steps.merge.outputs.result }}, build: ${{ steps.build.outputs.result }}); see created issue."
+        exit 1

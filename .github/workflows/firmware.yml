@@ -1,0 +1,82 @@
+name: Firmware
+
+# Builds all firmware targets and verifies the merged flash images. Also callable from other workflows (e.g. Pages)
+# to obtain the binaries as artifacts named `firmware-<target>`.
+# Releases (v* tags) are handled by release.yml.
+#
+# Branch protection: require the single status check `ci-ok`.
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:          # all branches; runs on the PR merge commit
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  CORE_VERSION: "3.3.10"
+
+jobs:
+  unit-tests:
+    name: unit-tests
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - name: Test merged-bin checker
+      run: python3 -I firmware/scripts/test_check_merged_bin.py -v
+
+  build:
+    name: build (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [ xw-z1, xw-z1-c3, xw-z1-s3, flix-esp32 ]
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0    # tags, for `git describe` in build.sh
+    - name: Install Arduino CLI
+      run: curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=/usr/local/bin sh
+    - name: Cache Arduino core and libraries
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.arduino15
+          ~/Arduino/libraries
+        key: arduino-esp32-${{ env.CORE_VERSION }}-${{ matrix.target }}-${{ hashFiles('firmware/build.sh') }}
+        restore-keys: |
+          arduino-esp32-${{ env.CORE_VERSION }}-
+    - name: Build ${{ matrix.target }}
+      run: firmware/build.sh "${{ matrix.target }}"
+    - name: Check merged image
+      run: python3 -I firmware/scripts/check_merged_bin.py "firmware/build/${{ matrix.target }}/flix.ino.merged.bin" --target "${{ matrix.target }}" | tee -a "$GITHUB_STEP_SUMMARY"
+    - name: Upload binaries
+      uses: actions/upload-artifact@v7
+      with:
+        name: firmware-${{ matrix.target }}
+        path: |
+          firmware/build/${{ matrix.target }}/flix.ino.merged.bin
+          firmware/build/${{ matrix.target }}/flix.ino.bin
+          firmware/build/${{ matrix.target }}/flix.ino.bootloader.bin
+          firmware/build/${{ matrix.target }}/flix.ino.partitions.bin
+        if-no-files-found: error
+
+  ci-ok:
+    name: ci-ok
+    if: always()
+    needs: [ unit-tests, build ]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Verify all jobs succeeded
+      env:
+        RESULTS: ${{ needs.unit-tests.result }} ${{ needs.build.result }}
+      run: |
+        echo "Job results: $RESULTS"
+        for r in $RESULTS; do
+          [ "$r" = "success" ] || { echo "::error::A required job did not succeed ($r)"; exit 1; }
+        done
+

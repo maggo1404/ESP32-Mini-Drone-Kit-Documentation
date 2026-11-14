@@ -1,0 +1,85 @@
+# Build from the repository root:  mkdocs build --strict -f docs-site/mkdocs.yml
+# Output goes to <repo>/site/ (git-ignored). The default language (de) is built at the
+# site root, English at /en/.
+site_name: ESP32 Mini Drone Kit
+site_description: Dokumentation und Web-Flasher für das ESP32 Mini Drone Kit (XW_Z1 V2.0)
+site_url: https://maggo1404.github.io/ESP32-Mini-Drone-Kit-Documentation/
+repo_url: https://github.com/maggo1404/ESP32-Mini-Drone-Kit-Documentation
+repo_name: maggo1404/ESP32-Mini-Drone-Kit-Documentation
+docs_dir: docs
+site_dir: ../site
+use_directory_urls: true
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - toc.follow
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+
+extra_javascript:
+  # ESP Web Tools: pinned version, loaded as ES module (registers <esp-web-install-button>)
+  - path: https://unpkg.com/esp-web-tools@10.5.2/dist/web/install-button.js?module
+    type: module
+  - assets/flasher.js
+
+plugins:
+  - search
+  - i18n:
+      docs_structure: suffix
+      fallback_to_default: true
+      reconfigure_material: true
+      reconfigure_search: true
+      languages:
+        - locale: de
+          default: true
+          name: Deutsch
+          build: true
+        - locale: en
+          name: English
+          build: true
+          nav_translations:
+            Start: Home
+            Hardware: Hardware
+            Zusammenbau & Bedienung: Assembly & usage
+            Firmware: Firmware
+            Web-Flasher: Web flasher
+            Fernsteuerung: Remote control
+            Fehlerbehebung: Troubleshooting
+            Lizenz: License
+
+nav:
+  - Start: index.md
+  - Hardware: hardware.md
+  - Zusammenbau & Bedienung: assembly.md
+  - Firmware: firmware.md
+  - Web-Flasher: flasher.md
+  - Fernsteuerung: remote-control.md
+  - Fehlerbehebung: troubleshooting.md
+  - Lizenz: license.md
